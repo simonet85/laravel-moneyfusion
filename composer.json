@@ -1,23 +1,18 @@
 {
-    "name": "votre-vendor/laravel-moneyfusion",
+    "name": "simonet85/laravel-moneyfusion",
     "description": "Laravel package for MoneyFusion payment integration",
     "keywords": [
         "laravel",
         "moneyfusion",
         "payment",
-        "mobile-money",
-        "orange-money",
-        "mtn-money",
-        "wave",
-        "africa",
         "payment-gateway"
     ],
     "type": "library",
     "license": "MIT",
     "authors": [
         {
-            "name": "Votre Nom",
-            "email": "votre@email.com"
+            "name": "Simonet",
+            "email": "christian.85@live.fr"
         }
     ],
     "require": {
@@ -32,21 +27,21 @@
     },
     "autoload": {
         "psr-4": {
-            "VotreVendor\\LaravelMoneyFusion\\": "src/"
+            "Simonet85\\LaravelMoneyFusion\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VotreVendor\\LaravelMoneyFusion\\Tests\\": "tests/"
+            "Simonet85\\LaravelMoneyFusion\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "VotreVendor\\LaravelMoneyFusion\\MoneyFusionServiceProvider"
+                "Simonet85\\LaravelMoneyFusion\\MoneyFusionServiceProvider"
             ],
             "aliases": {
-                "MoneyFusion": "VotreVendor\\LaravelMoneyFusion\\Facades\\MoneyFusion"
+                "MoneyFusion": "Simonet85\\LaravelMoneyFusion\\Facades\\MoneyFusion"
             }
         }
     },
