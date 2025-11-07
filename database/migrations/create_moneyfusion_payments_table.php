@@ -64,9 +64,6 @@ return new class extends Migration
             //       ->on('orders')
             //       ->onDelete('cascade');
         });
-
-        // Commentaire de la table
-        DB::statement("COMMENT ON TABLE moneyfusion_payments IS 'Table des paiements MoneyFusion'");
     }
 
     /**
