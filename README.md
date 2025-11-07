@@ -1,6 +1,6 @@
 # 📦 Laravel MoneyFusion Package
 
-[![Latest Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/votre-vendor/laravel-moneyfusion)
+[![Latest Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/simonet85/laravel-moneyfusion)
 [![Laravel](https://img.shields.io/badge/Laravel-10.x%2B-red.svg)](https://laravel.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -24,7 +24,7 @@ Package Laravel pour l'intégration simplifiée de **MoneyFusion** - Solution de
 ## 📦 Installation
 
 ```bash
-composer require votre-vendor/laravel-moneyfusion
+composer require simonet85/laravel-moneyfusion
 ```
 
 ## ⚙️ Configuration
@@ -136,11 +136,13 @@ class CheckoutController extends Controller
 Le package enregistre automatiquement les routes suivantes:
 
 ### API Routes
+
 - `POST /api/moneyfusion/payments/initiate` - Créer un paiement
 - `GET /api/moneyfusion/payments/{token}/status` - Vérifier le statut
 - `POST /api/moneyfusion/webhook` - Recevoir les webhooks MoneyFusion
 
 ### Web Routes
+
 - `GET /payment/callback` - Redirection après paiement
 - `GET /payment/success/{token}` - Page de succès
 - `GET /payment/failed` - Page d'échec
@@ -219,6 +221,7 @@ MoneyFusionPayment::today()->get();     // Paiements du jour
 ### Webhooks
 
 Les webhooks sont automatiquement protégés. Le package:
+
 - ✅ Exclut automatiquement la route webhook du CSRF
 - ✅ Valide les données reçues
 - ✅ Prévient les duplications
@@ -227,6 +230,7 @@ Les webhooks sont automatiquement protégés. Le package:
 ### Configuration HTTPS
 
 **Important:** En production, assurez-vous que:
+
 - `webhook_url` utilise HTTPS
 - `return_url` utilise HTTPS
 - Votre domaine a un certificat SSL valide
@@ -244,6 +248,7 @@ composer test-coverage
 ## 📖 Documentation complète
 
 Pour une documentation plus détaillée, consultez:
+
 - [Guide d'utilisation complet](docs/USAGE.md)
 - [Configuration avancée](docs/CONFIGURATION.md)
 - [Gestion des webhooks](docs/WEBHOOKS.md)
@@ -255,7 +260,7 @@ Les contributions sont les bienvenues! Consultez [CONTRIBUTING.md](CONTRIBUTING.
 
 ## 🐛 Signaler un bug
 
-Si vous trouvez un bug, ouvrez une issue sur [GitHub](https://github.com/votre-vendor/laravel-moneyfusion/issues).
+Si vous trouvez un bug, ouvrez une issue sur [GitHub](https://github.com/simonet85/laravel-moneyfusion/issues).
 
 ## 📄 Licence
 
@@ -268,7 +273,7 @@ Ce package est open-source sous licence [MIT](LICENSE).
 
 ## 📞 Support
 
-- GitHub Issues: [issues](https://github.com/votre-vendor/laravel-moneyfusion/issues)
+- GitHub Issues: [issues](https://github.com/simonet85/laravel-moneyfusion/issues)
 - Email: support@example.com
 - Documentation MoneyFusion: [docs.moneyfusion.net](https://docs.moneyfusion.net)
 
