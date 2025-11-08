@@ -3,8 +3,11 @@
 namespace Simonet85\LaravelMoneyFusion\Http\Controllers;
 
 use Simonet85\LaravelMoneyFusion\Models\MoneyFusionPayment;
+use Simonet85\LaravelMoneyFusion\Events\PaymentStatusUpdated;
+use Simonet85\LaravelMoneyFusion\Events\PaymentReceived;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
@@ -140,6 +143,8 @@ class WebhookController extends Controller
             'transaction' => $data['numeroTransaction'] ?? null,
         ]);
 
+        $oldStatus = $payment->statut;
+
         // Utiliser une transaction DB pour garantir l'intégrité
         DB::transaction(function () use ($payment, $data) {
             // Marquer comme payé
@@ -155,13 +160,24 @@ class WebhookController extends Controller
             ]);
         });
 
+        // Déclencher les événements
+        $payment->refresh();
+
+        if ($oldStatus !== $payment->statut) {
+            event(new PaymentStatusUpdated($payment, $oldStatus, $payment->statut));
+        }
+
+        if ($payment->statut === 'paid' && $oldStatus !== 'paid') {
+            event(new PaymentReceived($payment));
+        }
+
         // Logique métier après paiement réussi
         $this->postPaymentSuccess($payment, $data);
 
         Log::info('MoneyFusion Webhook: Payment success processed', [
             'token' => $payment->token_pay,
-            'new_status' => $payment->fresh()->statut,
-            'paid_at' => $payment->fresh()->paid_at,
+            'new_status' => $payment->statut,
+            'paid_at' => $payment->paid_at,
         ]);
     }
 
@@ -180,6 +196,8 @@ class WebhookController extends Controller
             'reason' => $data['reason'] ?? 'Unknown',
         ]);
 
+        $oldStatus = $payment->statut;
+
         // Marquer comme échoué
         $payment->markAsFailed();
 
@@ -188,12 +206,19 @@ class WebhookController extends Controller
             'raw_response' => array_merge($payment->raw_response ?? [], $data),
         ]);
 
+        // Déclencher l'événement de changement de statut
+        $payment->refresh();
+
+        if ($oldStatus !== $payment->statut) {
+            event(new PaymentStatusUpdated($payment, $oldStatus, $payment->statut));
+        }
+
         // Logique métier après échec
         $this->postPaymentFailure($payment, $data);
 
         Log::info('MoneyFusion Webhook: Payment failure processed', [
             'token' => $payment->token_pay,
-            'new_status' => $payment->fresh()->statut,
+            'new_status' => $payment->statut,
         ]);
     }
 
@@ -231,11 +256,20 @@ class WebhookController extends Controller
             'old_status' => $payment->statut,
         ]);
 
+        $oldStatus = $payment->statut;
+
         $payment->markAsCancelled();
 
         $payment->update([
             'raw_response' => array_merge($payment->raw_response ?? [], $data),
         ]);
+
+        // Déclencher l'événement de changement de statut
+        $payment->refresh();
+
+        if ($oldStatus !== $payment->statut) {
+            event(new PaymentStatusUpdated($payment, $oldStatus, $payment->statut));
+        }
 
         Log::info('MoneyFusion Webhook: Payment cancellation processed', [
             'token' => $payment->token_pay,

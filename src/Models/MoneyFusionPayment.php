@@ -10,6 +10,13 @@ class MoneyFusionPayment extends Model
 {
     use HasFactory;
 
+    /**
+     * Le nom de la table associée au modèle
+     *
+     * @var string
+     */
+    protected $table = 'moneyfusion_payments';
+
     protected $fillable = [
         'token_pay',
         'user_id',

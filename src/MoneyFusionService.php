@@ -12,12 +12,16 @@ class MoneyFusionService
     protected string $apiUrl;
     protected string $appKey;
     protected int $timeout;
+    protected bool $verifySSL;
+    protected ?string $checkPaymentUrl;
 
     public function __construct()
     {
         $this->apiUrl = config('moneyfusion.api_url');
         $this->appKey = config('moneyfusion.app_key');
         $this->timeout = config('moneyfusion.timeout', 30);
+        $this->verifySSL = config('moneyfusion.verify_ssl', true);
+        $this->checkPaymentUrl = config('moneyfusion.check_payment_url');
 
         if (empty($this->apiUrl) || empty($this->appKey)) {
             throw new MoneyFusionException('MoneyFusion configuration is missing.');
@@ -31,10 +35,11 @@ class MoneyFusionService
     {
         try {
             $payload = $this->preparePayload($data);
-            
+
             Log::info('MoneyFusion: Creating payment', ['payload' => $payload]);
 
             $response = Http::timeout($this->timeout)
+                ->withOptions(['verify' => $this->verifySSL])
                 ->post($this->apiUrl, $payload);
 
             if (!$response->successful()) {
@@ -67,11 +72,53 @@ class MoneyFusionService
     public function checkPaymentStatus(string $tokenPay): array
     {
         try {
-            $url = str_replace('/create-payment', "/check-payment/{$tokenPay}", $this->apiUrl);
-            
-            $response = Http::timeout($this->timeout)->get($url);
+            // Utiliser l'URL configurée si disponible, sinon construire depuis api_url
+            if ($this->checkPaymentUrl) {
+                $url = rtrim($this->checkPaymentUrl, '/') . '/' . $tokenPay;
+            } else {
+                $url = str_replace('/create-payment', "/check-payment/{$tokenPay}", $this->apiUrl);
+            }
 
+            Log::info('MoneyFusion: Checking payment status', [
+                'url' => $url,
+                'token' => $tokenPay
+            ]);
+
+            $response = Http::timeout($this->timeout)
+                ->withOptions(['verify' => $this->verifySSL])
+                ->get($url);
+
+            // Fallback à la base de données locale si l'API échoue
             if (!$response->successful()) {
+                Log::warning('MoneyFusion: Check payment API returned error', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+
+                // Tenter de récupérer depuis la base de données locale
+                $payment = $this->getPaymentByToken($tokenPay);
+
+                if ($payment) {
+                    Log::info('MoneyFusion: Using local database fallback', [
+                        'token' => $tokenPay,
+                        'status' => $payment->statut
+                    ]);
+
+                    return [
+                        'statut' => true,
+                        'data' => [
+                            'statut' => $payment->statut,
+                            'montant' => $payment->montant,
+                            'token' => $payment->token_pay,
+                            'numeroTransaction' => $payment->numero_transaction,
+                            'moyen' => $payment->moyen,
+                            'frais' => $payment->frais,
+                            'source' => 'local_database',
+                            'message' => 'API vérification indisponible. Données de la base locale.'
+                        ]
+                    ];
+                }
+
                 throw new MoneyFusionException('API error: ' . $response->body());
             }
 
@@ -89,6 +136,23 @@ class MoneyFusionService
                 'error' => $e->getMessage(),
                 'token' => $tokenPay
             ]);
+
+            // Dernier recours: essayer la base de données
+            $payment = $this->getPaymentByToken($tokenPay);
+
+            if ($payment) {
+                return [
+                    'statut' => true,
+                    'data' => [
+                        'statut' => $payment->statut,
+                        'montant' => $payment->montant,
+                        'token' => $payment->token_pay,
+                        'source' => 'local_database_exception',
+                        'message' => 'Erreur API. Données de la base locale.'
+                    ]
+                ];
+            }
+
             throw new MoneyFusionException($e->getMessage(), 0, $e);
         }
     }
