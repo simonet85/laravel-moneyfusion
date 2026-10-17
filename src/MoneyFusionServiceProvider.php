@@ -2,6 +2,7 @@
 
 namespace Simonet85\LaravelMoneyFusion;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Simonet85\LaravelMoneyFusion\Console\TestPaymentCommand;
 use Simonet85\LaravelMoneyFusion\Console\CheckPaymentCommand;
@@ -32,9 +33,18 @@ class MoneyFusionServiceProvider extends ServiceProvider
         // Charger les migrations
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
-        // Charger les routes
-        $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        // Charger les routes (désactivables via config('moneyfusion.routes'))
+        if (config('moneyfusion.routes.enabled', true)) {
+            // Préfixe /api appliqué ici (loadRoutesFrom n'en ajoute pas) : les URLs documentées
+            // sont bien /api/moneyfusion/... (webhook : /api/moneyfusion/webhook).
+            if (!$this->app->routesAreCached()) {
+                Route::middleware('api')->prefix('api')->group(__DIR__.'/../routes/api.php');
+            }
+
+            if (config('moneyfusion.routes.web', true)) {
+                $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+            }
+        }
 
         // Charger les vues
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'moneyfusion');

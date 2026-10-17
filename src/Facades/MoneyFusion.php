@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array checkPaymentStatus(string $tokenPay)
  * @method static \Simonet85\LaravelMoneyFusion\Models\MoneyFusionPayment|null getPaymentByToken(string $tokenPay)
  * 
- * @see \VotreVendor\LaravelMoneyFusion\MoneyFusionService
+ * @see \Simonet85\LaravelMoneyFusion\MoneyFusionService
  */
 
 class MoneyFusion extends Facade

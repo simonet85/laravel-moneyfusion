@@ -11,16 +11,36 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
-    protected MoneyFusionService $moneyFusion;
-
-    public function __construct(MoneyFusionService $moneyFusion)
+    /**
+     * Résolu à la demande : lister les routes (route:list) ne doit pas exiger
+     * que MONEYFUSION_APP_KEY soit déjà configurée.
+     */
+    protected function moneyFusion(): MoneyFusionService
     {
-        $this->moneyFusion = $moneyFusion;
+        return app(MoneyFusionService::class);
+    }
+
+    /**
+     * Un paiement rattaché à un utilisateur n'est accessible qu'à cet utilisateur
+     * (un visiteur non connecté qui connaît le token n'y a pas accès).
+     */
+    protected function isForbidden(MoneyFusionPayment $payment): bool
+    {
+        return $payment->user_id && (!Auth::check() || $payment->user_id !== Auth::id());
+    }
+
+    /**
+     * URL d'accueil : route "home" si elle existe, sinon la racine du site.
+     */
+    protected function homeUrl(): string
+    {
+        return Route::has('home') ? route('home') : url('/');
     }
 
     /**
@@ -78,7 +98,7 @@ class PaymentController extends Controller
             ]);
 
             // Créer le paiement via le service
-            $result = $this->moneyFusion->createPayment($validated);
+            $result = $this->moneyFusion()->createPayment($validated);
 
             // Vérifier le succès
             if (!($result['statut'] ?? false)) {
@@ -155,7 +175,7 @@ class PaymentController extends Controller
             }
 
             // Vérifier les permissions (si utilisateur connecté)
-            if (Auth::check() && $localPayment->user_id && $localPayment->user_id !== Auth::id()) {
+            if ($this->isForbidden($localPayment)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Accès non autorisé',
@@ -163,7 +183,7 @@ class PaymentController extends Controller
             }
 
             // Récupérer le statut depuis MoneyFusion
-            $result = $this->moneyFusion->checkPaymentStatus($token);
+            $result = $this->moneyFusion()->checkPaymentStatus($token);
 
             return response()->json([
                 'success' => true,
@@ -227,7 +247,7 @@ class PaymentController extends Controller
                 'ip' => $request->ip(),
             ]);
 
-            return redirect()->route('home')
+            return redirect()->to($this->homeUrl())
                 ->with('error', 'Token de paiement manquant');
         }
 
@@ -239,7 +259,7 @@ class PaymentController extends Controller
             ]);
 
             // Vérifier le statut auprès de MoneyFusion
-            $this->moneyFusion->checkPaymentStatus($token);
+            $this->moneyFusion()->checkPaymentStatus($token);
 
             // Récupérer le paiement depuis la base de données
             $payment = MoneyFusionPayment::where('token_pay', $token)->first();
@@ -249,7 +269,7 @@ class PaymentController extends Controller
                     'token' => $token,
                 ]);
 
-                return redirect()->route('home')
+                return redirect()->to($this->homeUrl())
                     ->with('error', 'Paiement introuvable');
             }
 
@@ -311,12 +331,12 @@ class PaymentController extends Controller
                     'token' => $token,
                 ]);
 
-                return redirect()->route('home')
+                return redirect()->to($this->homeUrl())
                     ->with('error', 'Paiement introuvable');
             }
 
             // Vérifier les permissions
-            if (Auth::check() && $payment->user_id && $payment->user_id !== Auth::id()) {
+            if ($this->isForbidden($payment)) {
                 Log::warning('Unauthorized access to success page', [
                     'token' => $token,
                     'user_id' => Auth::id(),
@@ -347,7 +367,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->route('home')
+            return redirect()->to($this->homeUrl())
                 ->with('error', 'Une erreur s\'est produite');
         }
     }
@@ -382,12 +402,12 @@ class PaymentController extends Controller
             $payment = MoneyFusionPayment::where('token_pay', $token)->first();
 
             if (!$payment) {
-                return redirect()->route('home')
+                return redirect()->to($this->homeUrl())
                     ->with('error', 'Paiement introuvable');
             }
 
             // Vérifier les permissions
-            if (Auth::check() && $payment->user_id && $payment->user_id !== Auth::id()) {
+            if ($this->isForbidden($payment)) {
                 abort(403, 'Accès non autorisé');
             }
 
@@ -415,7 +435,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->route('home')
+            return redirect()->to($this->homeUrl())
                 ->with('error', 'Une erreur s\'est produite');
         }
     }
@@ -442,7 +462,7 @@ class PaymentController extends Controller
             }
 
             // Vérifier les permissions
-            if (Auth::check() && $payment->user_id && $payment->user_id !== Auth::id()) {
+            if ($this->isForbidden($payment)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Accès non autorisé',

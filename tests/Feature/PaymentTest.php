@@ -64,6 +64,7 @@ class PaymentTest extends TestCase
         $payment = MoneyFusionPayment::factory()->create([
             'token_pay' => 'test_token_123',
             'statut' => 'pending',
+            'montant' => 5000,
         ]);
 
         Http::fake([

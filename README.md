@@ -61,7 +61,7 @@ php artisan vendor:publish --tag=moneyfusion-views
 ### Avec la Facade
 
 ```php
-use VotreVendor\LaravelMoneyFusion\Facades\MoneyFusion;
+use Simonet85\LaravelMoneyFusion\Facades\MoneyFusion;
 
 // Créer un paiement
 $result = MoneyFusion::createPayment([
@@ -105,7 +105,7 @@ if ($payment->isPaid()) {
 ### Dans un Controller
 
 ```php
-use VotreVendor\LaravelMoneyFusion\MoneyFusionService;
+use Simonet85\LaravelMoneyFusion\MoneyFusionService;
 
 class CheckoutController extends Controller
 {
@@ -220,12 +220,45 @@ MoneyFusionPayment::today()->get();     // Paiements du jour
 
 ### Webhooks
 
-Les webhooks sont automatiquement protégés. Le package:
+MoneyFusion **ne signe pas** ses notifications (aucun secret, HMAC ni liste d'IP documentés).
+Le contenu d'un webhook ne peut donc pas être cru. Le package :
 
-- ✅ Exclut automatiquement la route webhook du CSRF
-- ✅ Valide les données reçues
-- ✅ Prévient les duplications
-- ✅ Log toutes les transactions
+- ✅ n'utilise que `tokenPay` et relit le statut réel auprès de l'API (`paiementNotif/{token}`) avant toute modification ;
+- ✅ ignore la notification (HTTP 503) si l'API est injoignable : MoneyFusion peut la renvoyer ;
+- ✅ refuse de marquer « payé » un paiement dont le montant API (`Montant`) diffère du montant créé ;
+- ✅ ne fait jamais revenir un paiement « payé » en arrière, et ignore les notifications en double ;
+- ✅ reconnaît les événements documentés `payin.session.pending|completed|cancelled` (et les anciens `payment.*`) ;
+- ✅ n'est pas soumis au CSRF (routes sans groupe `web`).
+
+`MoneyFusion::checkPaymentStatus()` renvoie `verified: true` uniquement pour une vraie réponse de l'API.
+En cas de repli sur la base locale, `verified` vaut `false` : **ne créditez jamais un client sur une réponse non vérifiée.**
+
+### Statuts
+
+| API (`data.statut`) | Statut local |
+|---|---|
+| `pending` | `pending` |
+| `paid` | `paid` |
+| `failure` | `failed` |
+| `no paid` | `cancelled` |
+
+### Routes
+
+Les routes sont préfixées `/api` : webhook `POST /api/moneyfusion/webhook`.
+Les endpoints `payments/initiate|status|cancel` sont publics par défaut ; si vous créez vos paiements côté
+serveur avec `MoneyFusion::createPayment()`, désactivez-les :
+
+```php
+// config/moneyfusion.php
+'routes' => [
+    'enabled' => true,             // false : aucune route du package
+    'web' => true,                 // pages /payment/callback, success, pending, failed
+    'payment_endpoints' => false,  // initiate / status / cancel
+    'middleware' => ['web', 'auth'], // si vous les gardez
+],
+```
+
+Un paiement rattaché à un `user_id` n'est accessible qu'à cet utilisateur (un visiteur qui connaît le token n'y a pas accès).
 
 ### Configuration HTTPS
 
@@ -238,6 +271,9 @@ Les webhooks sont automatiquement protégés. Le package:
 ## 🧪 Tests
 
 ```bash
+# Les tests utilisent SQLite en mémoire par défaut ; pour une autre base :
+# DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=moneyfusion_test DB_USERNAME=... DB_PASSWORD=... vendor/bin/phpunit
+
 # Exécuter tous les tests
 composer test
 

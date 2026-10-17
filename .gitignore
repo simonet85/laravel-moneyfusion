@@ -58,3 +58,7 @@ Thumbs.db
 # Package development
 .phpunit.cache
 phpunit.xml
+
+# PHPUnit
+.phpunit.cache/
+.phpunit.result.cache

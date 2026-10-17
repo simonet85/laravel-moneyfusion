@@ -139,8 +139,30 @@ return [
     | Exemple: https://www.pay.moneyfusion.net/paiementNotif
     | Résultat: https://www.pay.moneyfusion.net/paiementNotif/{token}
     |
-    | Si non spécifié, l'URL sera construite automatiquement depuis api_url.
+    | Par défaut : l'endpoint documenté https://pay.moneyfusion.net/paiementNotif
     |
     */
-    'check_payment_url' => env('MONEYFUSION_CHECK_PAYMENT_URL', null),
+    'check_payment_url' => env('MONEYFUSION_CHECK_PAYMENT_URL', 'https://pay.moneyfusion.net/paiementNotif'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Routes du package
+    |--------------------------------------------------------------------------
+    |
+    | enabled            : charger les routes du package (désactivez-les si vous les redéfinissez).
+    | web                : pages /payment/callback, /payment/success|pending|failed.
+    | payment_endpoints  : POST /api/moneyfusion/payments/initiate, GET .../{token}/status,
+    |                      POST .../{token}/cancel. Désactivez-les si vous créez vos paiements
+    |                      côté serveur avec MoneyFusion::createPayment().
+    | middleware         : middlewares des payment_endpoints (ex. ['web', 'auth']).
+    |
+    | Le webhook (POST /api/moneyfusion/webhook) reste actif tant que "enabled" est vrai.
+    |
+    */
+    'routes' => [
+        'enabled' => env('MONEYFUSION_ROUTES_ENABLED', true),
+        'web' => env('MONEYFUSION_ROUTES_WEB', true),
+        'payment_endpoints' => env('MONEYFUSION_ROUTES_PAYMENT_ENDPOINTS', true),
+        'middleware' => [],
+    ],
 ];

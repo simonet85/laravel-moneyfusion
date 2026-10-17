@@ -44,6 +44,11 @@ class MoneyFusionPayment extends Model
         'paid_at' => 'datetime',
     ];
 
+    protected static function newFactory(): \Simonet85\LaravelMoneyFusion\Database\Factories\MoneyFusionPaymentFactory
+    {
+        return \Simonet85\LaravelMoneyFusion\Database\Factories\MoneyFusionPaymentFactory::new();
+    }
+
     /**
      * Relation avec l'utilisateur
      */

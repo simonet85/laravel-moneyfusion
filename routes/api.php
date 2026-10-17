@@ -9,29 +9,37 @@ use Simonet85\LaravelMoneyFusion\Http\Controllers\WebhookController;
 | MoneyFusion API Routes
 |--------------------------------------------------------------------------
 |
-| Ces routes sont chargées automatiquement par le Service Provider.
-| Le préfixe "api/moneyfusion" est appliqué automatiquement.
+| Ces routes sont chargÃ©es automatiquement par le Service Provider
+| (dÃ©sactivables via config('moneyfusion.routes')). Le prÃ©fixe "api/moneyfusion"
+| est appliquÃ© par le Service Provider.
 |
 */
 
-// Routes de paiement (nécessitent l'authentification si middleware activé)
 Route::prefix('moneyfusion')->name('moneyfusion.')->group(function () {
 
-    // Créer un nouveau paiement
-    Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment'])
-        ->name('payments.initiate');
+    // Endpoints de paiement : dÃ©sactivez-les (routes.payment_endpoints = false) si votre
+    // application crÃ©e ses paiements via MoneyFusion::createPayment(), ou protÃ©gez-les
+    // avec routes.middleware (ex. ['web', 'auth']).
+    if (config('moneyfusion.routes.payment_endpoints', true)) {
+        Route::middleware(config('moneyfusion.routes.middleware', []))->group(function () {
+            // CrÃ©er un nouveau paiement
+            Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment'])
+                ->name('payments.initiate');
 
-    // Vérifier le statut d'un paiement
-    Route::get('/payments/{token}/status', [PaymentController::class, 'checkStatus'])
-        ->name('payments.status');
+            // VÃ©rifier le statut d'un paiement
+            Route::get('/payments/{token}/status', [PaymentController::class, 'checkStatus'])
+                ->name('payments.status');
 
-    // Annuler un paiement (optionnel)
-    Route::post('/payments/{token}/cancel', [PaymentController::class, 'cancel'])
-        ->name('payments.cancel');
+            // Annuler un paiement (optionnel)
+            Route::post('/payments/{token}/cancel', [PaymentController::class, 'cancel'])
+                ->name('payments.cancel');
+        });
+    }
 
-    // Webhook MoneyFusion (SANS authentification, SANS CSRF)
-    // Note: Le CSRF est désactivé dans VerifyCsrfToken middleware
+    // Webhook MoneyFusion : sans authentification (MoneyFusion ne signe pas ses notifications).
+    // Le contenu n'est jamais cru : le statut est relu auprÃ¨s de l'API avant toute modification.
+    // Ces routes n'utilisent pas le groupe "web" : pas de CSRF Ã  exclure.
     Route::post('/webhook', [WebhookController::class, 'handle'])
-        ->name('webhook')
-        ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+        ->middleware('throttle:120,1')
+        ->name('webhook');
 });

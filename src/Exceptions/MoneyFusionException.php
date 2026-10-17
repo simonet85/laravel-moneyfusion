@@ -1,8 +1,9 @@
 <?php
 
-namespace VotreVendor\LaravelMoneyFusion\Exceptions;
+namespace Simonet85\LaravelMoneyFusion\Exceptions;
 
 use Exception;
+use Throwable;
 
 class MoneyFusionException extends Exception
 {
@@ -10,9 +11,8 @@ class MoneyFusionException extends Exception
     protected $message = 'Une erreur est survenue avec MoneyFusion.';
     protected $code = 500;
 
-    public function __construct($message = null, $code = 0, Exception $previous = null)
+    public function __construct($message = null, $code = 0, ?Throwable $previous = null)
     {
-        parent::__construct($message, $code, $previous);
+        parent::__construct($message ?? $this->message, $code, $previous);
     }
-    
 }
