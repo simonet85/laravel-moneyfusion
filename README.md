@@ -1,7 +1,7 @@
 # 📦 Laravel MoneyFusion Package
 
-[![Latest Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/simonet85/laravel-moneyfusion)
-[![Laravel](https://img.shields.io/badge/Laravel-10.x%2B-red.svg)](https://laravel.com)
+[![Latest Version](https://img.shields.io/packagist/v/simonet85/laravel-moneyfusion.svg)](https://packagist.org/packages/simonet85/laravel-moneyfusion)
+[![Laravel](https://img.shields.io/badge/Laravel-9.x%20--%2013.x-red.svg)](https://laravel.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Package Laravel pour l'intégration simplifiée de **MoneyFusion** - Solution de paiement mobile money (Orange Money, MTN, Wave, Moov) et cartes bancaires en Afrique.
@@ -19,7 +19,7 @@ Package Laravel pour l'intégration simplifiée de **MoneyFusion** - Solution de
 - ✅ Vues Blade incluses
 - ✅ Commands Artisan
 - ✅ Tests automatisés
-- ✅ Support Laravel 10.x et 11.x
+- ✅ Support Laravel 9.x à 13.x
 
 ## 📦 Installation
 
